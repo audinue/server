@@ -36,6 +36,9 @@ export let serve: (options: {
   after?(): void
 }) => {
   stop(): void
+  push(url: string): void
+  replace(url: string): void
+  reload(): void
   fetch(
     url: string,
     options?: { method?: 'GET' | 'POST'; body?: FormData }
