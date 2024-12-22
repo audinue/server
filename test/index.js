@@ -8,6 +8,7 @@ let links = `
     <a href="/form-post">Form Post Test</a>
     <a href="/posts">Posts</a>
     <a href="/redirection">Redirection Test</a>
+    <a href="/fetch">Fetch Test</a>
   </p>
 `
 
@@ -19,7 +20,7 @@ let tabs = `
   </p>
 `
 
-serve({
+window.server = serve({
   root: '#root',
   cache: true,
   loaded () {
@@ -142,6 +143,15 @@ serve({
           ${links}
           <h1>Qux</h1>
         `
+      case '/fetch':
+        return `
+          ${links}
+          <h1>Fetch Test</h1>
+          <div id="out"></div>
+          <button onclick="server.fetch('/fetch-test').then(response => out.innerHTML = response)">Fetch</button>
+        `
+      case '/fetch-test':
+        return `Hello world!`
       default:
         return `
           ${links}

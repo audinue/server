@@ -34,4 +34,10 @@ export let serve: (options: {
    * Called after page navigation.
    */
   after?(): void
-}) => { stop(): void }
+}) => {
+  stop(): void
+  fetch(
+    url: string,
+    options?: { method?: 'GET' | 'POST'; body?: FormData }
+  ): Promise<string>
+}

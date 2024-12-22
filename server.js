@@ -232,6 +232,21 @@ export let serve = ({
         },
         true
       )
+    },
+    async fetch (url, { method = 'GET', body } = {}) {
+      let next = new URL(url, location.href)
+      while (true) {
+        let response = await fetch({
+          method,
+          url: next,
+          body
+        })
+        if (response.location) {
+          next = new URL(response.location, next)
+          continue
+        }
+        return response
+      }
     }
   }
 }
