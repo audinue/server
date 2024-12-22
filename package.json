@@ -1,0 +1,16 @@
+{
+  "name": "@audinue/server",
+  "version": "0.0.1",
+  "main": "server.js",
+  "types": "server.d.ts",
+  "scripts": {
+    "test": "vite test"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "vite": "^6.0.5"
+  }
+}
