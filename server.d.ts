@@ -1,41 +1,38 @@
-export type GetRequest = {
-  method: "GET";
-  url: URL;
-};
-
-export type PostRequest = {
-  method: "POST";
+export type Request = {
+  method: "GET" | "POST";
   url: URL;
   body: FormData;
 };
 
-export type Request = GetRequest | PostRequest;
+export type Redirect = { location: string };
 
-export type Redirection = { location: string };
+export type Response = string | Redirect;
 
-export type Response = string | Redirection;
+export type CacheConfig = {
+  enabled?: boolean;
+  key?: string;
+  storage?: Storage;
+};
 
-export type ServeOption = {
+export type ServeConfig = {
   fetch(request: Request): Response | Promise<Response>;
   root?: string;
-  refresh?: boolean;
-  cache?: boolean;
-  storage?: Storage;
+  reload?: boolean;
+  cache?: CacheConfig;
   navigating?(): void;
   navigated?(): void;
 };
+
+export type FetchConfig = { method?: "GET" | "POST"; body?: FormData };
 
 export type Server = {
   dispose(): void;
   push(url: string): void;
   replace(url: string): void;
   reload(): void;
-  fetch(
-    url: string,
-    options?: { method?: "GET" | "POST"; body?: FormData }
-  ): Promise<string>;
+  fetch(url: string, config?: FetchConfig): Promise<string>;
 };
 
-export type Serve = (options: ServeOption) => Server;
+export type Serve = (config: ServeConfig) => Server;
 
-export let serve: Serve;
+export const serve: Serve;

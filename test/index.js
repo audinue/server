@@ -1,4 +1,4 @@
-import { serve } from '../server'
+import { serve } from "../server";
 
 let links = `
   <p>
@@ -10,7 +10,7 @@ let links = `
     <a href="/redirection">Redirection Test</a>
     <a href="/fetch">Fetch Test</a>
   </p>
-`
+`;
 
 let tabs = `
   <p>
@@ -18,55 +18,57 @@ let tabs = `
     <a href="/tab-b" replace>Tab B</a>
     <a href="/tab-c" replace>Tab C</a>
   </p>
-`
+`;
 
 window.server = serve({
-  root: '#root',
-  cache: true,
-  loaded () {
-    document
-      .querySelectorAll('#root h1')
-      .forEach(h1 => (document.title = h1.textContent))
+  root: "#root",
+  cache: {
+    enabled: true,
   },
-  async fetch (req) {
+  navigated() {
+    document
+      .querySelectorAll("#root h1")
+      .forEach((h1) => (document.title = h1.textContent));
+  },
+  async fetch(req) {
     switch (req.url.pathname) {
-      case '/':
+      case "/":
         return `
           ${links}
           <h1>Home</h1>
-        `
-      case '/tab-a':
+        `;
+      case "/tab-a":
         return `
           ${links}
           ${tabs}
           <h1>Tab A</h1>
-        `
-      case '/tab-b':
+        `;
+      case "/tab-b":
         return `
           ${links}
           ${tabs}
           <h1>Tab B</h1>
-        `
-      case '/tab-c':
+        `;
+      case "/tab-c":
         return `
           ${links}
           ${tabs}
           <h1>Tab C</h1>
-        `
-      case '/form-get':
+        `;
+      case "/form-get":
         return `
           ${links}
           <h1>Form Get Test</h1>
-          <p>Query: ${req.url.searchParams.get('q')}</p>
+          <p>Query: ${req.url.searchParams.get("q")}</p>
           <form>
             <input name="q">
           </form>
-        `
-      case '/form-post':
-        if (req.method === 'POST') {
+        `;
+      case "/form-post":
+        if (req.method === "POST") {
           return {
-            location: '/form-get?q=' + encodeURIComponent(req.body.get('q'))
-          }
+            location: "/form-get?q=" + encodeURIComponent(req.body.get("q")),
+          };
         }
         return `
           ${links}
@@ -74,39 +76,39 @@ window.server = serve({
           <form method="post">
             <input name="q">
           </form>
-        `
-      case '/posts':
+        `;
+      case "/posts":
         let posts = await (
-          await fetch('https://jsonplaceholder.typicode.com/posts')
-        ).json()
+          await fetch("https://jsonplaceholder.typicode.com/posts")
+        ).json();
         return `
           ${links}
           <h1>Posts</h1>
           <ul>
             ${posts
               .map(
-                post => `
+                (post) => `
                   <li>
                     <a href="/post?id=${post.id}">${post.title}</a>
                   </li>
                 `
               )
-              .join('')}
+              .join("")}
           </ul>
-        `
-      case '/post':
+        `;
+      case "/post":
         let [post, comments] = await Promise.all([
           fetch(
             `https://jsonplaceholder.typicode.com/posts/${req.url.searchParams.get(
-              'id'
+              "id"
             )}`
-          ).then(res => res.json()),
+          ).then((res) => res.json()),
           fetch(
             `https://jsonplaceholder.typicode.com/comments/?postId=${req.url.searchParams.get(
-              'id'
+              "id"
             )}`
-          ).then(res => res.json())
-        ])
+          ).then((res) => res.json()),
+        ]);
         return `
           ${links}
           <h1>${post.title}</h1>
@@ -114,14 +116,14 @@ window.server = serve({
           <ul>
             ${comments
               .map(
-                comment => `
+                (comment) => `
                   <li>${comment.body}</li>
                 `
               )
-              .join('')}
+              .join("")}
           </ul>
-        `
-      case '/redirection':
+        `;
+      case "/redirection":
         return `
           ${links}
           <h1>Redirection Test</h1>
@@ -131,32 +133,32 @@ window.server = serve({
             <a href="/baz">Baz</a>
             <a href="/qux">Qux</a>
           </p>
-        `
-      case '/foo':
-        return { location: '/bar' }
-      case '/bar':
-        return { location: '/baz' }
-      case '/baz':
-        return { location: '/qux' }
-      case '/qux':
+        `;
+      case "/foo":
+        return { location: "/bar" };
+      case "/bar":
+        return { location: "/baz" };
+      case "/baz":
+        return { location: "/qux" };
+      case "/qux":
         return `
           ${links}
           <h1>Qux</h1>
-        `
-      case '/fetch':
+        `;
+      case "/fetch":
         return `
           ${links}
           <h1>Fetch Test</h1>
           <div id="out"></div>
           <button onclick="server.fetch('/fetch-test').then(response => out.innerHTML = response)">Fetch</button>
-        `
-      case '/fetch-test':
-        return `Hello world!`
+        `;
+      case "/fetch-test":
+        return `Hello world!`;
       default:
         return `
           ${links}
           <h1>Not Found</h1>
-        `
+        `;
     }
-  }
-})
+  },
+});

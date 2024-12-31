@@ -1,15 +1,22 @@
 export let serve = ({
   fetch,
   root = "body",
-  refresh = false,
-  cache = false,
-  storage = sessionStorage,
+  reload = false,
+  cache = null,
   navigating = () => {},
   navigated = () => {},
 }) => {
+  cache = {
+    enabled: false,
+    key: "cache",
+    storage: sessionStorage,
+    ...cache,
+  };
+
   let container;
   let latest;
-  let caches = cache && JSON.parse(storage.getItem("cache") ?? "{}");
+  let caches =
+    cache.enabled && JSON.parse(cache.storage.getItem(cache.key) ?? "{}");
   let listeners = [];
 
   let navigate = async (
@@ -24,7 +31,7 @@ export let serve = ({
       return;
     }
     // respond from cache if any
-    if (cache && method === "GET" && !restored) {
+    if (cache.enabled && method === "GET" && !restored) {
       let key = url;
       while (key in caches) {
         let response = caches[key];
@@ -63,9 +70,9 @@ export let serve = ({
     // fetch the response
     let response = await fetch({ method, url, body });
     // store the response to cache
-    if (cache && method === "GET") {
+    if (cache.enabled && method === "GET") {
       caches[url] = response;
-      storage.setItem("cache", JSON.stringify(caches));
+      cache.storage.setItem(cache.key, JSON.stringify(caches));
     }
     // abort the process if this request is not the latest request
     if (latest !== id) {
@@ -143,7 +150,7 @@ export let serve = ({
       return;
     }
     container.innerHTML = event.state;
-    if (refresh) {
+    if (reload) {
       navigate(
         {
           method: "GET",
