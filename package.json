@@ -4,7 +4,7 @@
   "main": "server.js",
   "types": "server.d.ts",
   "scripts": {
-    "test": "vite test"
+    "dev": "vite test"
   },
   "license": "MIT",
   "publishConfig": {

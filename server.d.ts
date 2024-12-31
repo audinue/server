@@ -1,46 +1,41 @@
-export let serve: (options: {
-  fetch(
-    request:
-      | { method: 'GET'; url: URL }
-      | { method: 'POST'; url: URL; body: FormData }
-  ):
-    | string
-    | Promise<string>
-    | { location: string }
-    | Promise<{ location: string }>
-  /**
-   * Sets the root element selector.
-   * The default value is `'body'`
-   */
-  root?: string
-  /**
-   * Enables page refresh on popstate.
-   */
-  refresh?: boolean
-  /**
-   * Enables stale-while-revalidating style caching.
-   */
-  cache?: boolean
-  /**
-   * Sets the caching storage.
-   * The default value is `sessionStorage`
-   */
-  storage?: Storage
-  /**
-   * Called before page navigation.
-   */
-  before?(): void
-  /**
-   * Called after page navigation.
-   */
-  after?(): void
-}) => {
-  stop(): void
-  push(url: string): void
-  replace(url: string): void
-  reload(): void
+export type GetRequest = {
+  method: "GET";
+  url: URL;
+};
+
+export type PostRequest = {
+  method: "POST";
+  url: URL;
+  body: FormData;
+};
+
+export type Request = GetRequest | PostRequest;
+
+export type Redirection = { location: string };
+
+export type Response = string | Redirection;
+
+export type ServeOption = {
+  fetch(request: Request): Response | Promise<Response>;
+  root?: string;
+  refresh?: boolean;
+  cache?: boolean;
+  storage?: Storage;
+  before?(): void;
+  after?(): void;
+};
+
+export type Server = {
+  stop(): void;
+  push(url: string): void;
+  replace(url: string): void;
+  reload(): void;
   fetch(
     url: string,
-    options?: { method?: 'GET' | 'POST'; body?: FormData }
-  ): Promise<string>
-}
+    options?: { method?: "GET" | "POST"; body?: FormData }
+  ): Promise<string>;
+};
+
+export type Serve = (options: ServeOption) => Server;
+
+export let serve: Serve;

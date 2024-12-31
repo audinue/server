@@ -1,16 +1,16 @@
 export let serve = ({
   fetch,
-  root = 'body',
+  root = "body",
   refresh = false,
   cache = false,
   storage = sessionStorage,
   before = () => {},
-  after = () => {}
+  after = () => {},
 }) => {
-  let container
-  let navigating
-  let caches = cache && JSON.parse(storage.getItem('cache') ?? '{}')
-  let listeners = []
+  let container;
+  let navigating;
+  let caches = cache && JSON.parse(storage.getItem("cache") ?? "{}");
+  let listeners = [];
 
   let navigate = async (
     { method, url, body },
@@ -18,235 +18,229 @@ export let serve = ({
     restored = false,
     previous = []
   ) => {
-    let id = method + ' ' + url
+    let id = method + " " + url;
     if (navigating === id) {
-      return
+      return;
     }
-    if (cache && method === 'GET' && !restored) {
-      let key = url
+    if (cache && method === "GET" && !restored) {
+      let key = url;
       while (key in caches) {
-        let response = caches[key]
+        let response = caches[key];
         if (!response) {
-          break
+          break;
         }
         if (response.location) {
-          key = new URL(response.location, key)
-          continue
+          key = new URL(response.location, key);
+          continue;
         }
-        container.innerHTML = response
+        container.innerHTML = response;
         if (replace) {
-          history.replaceState(response, '', key)
+          history.replaceState(response, "", key);
         } else {
-          history.pushState(response, '', key)
+          history.pushState(response, "", key);
         }
-        scrollTo(0, 0)
-        replace = true
-        restored = true
-        break
+        scrollTo(0, 0);
+        replace = true;
+        restored = true;
+        break;
       }
     }
     if (!navigating) {
-      container.classList.add('loading')
-      before()
+      container.classList.add("loading");
+      before();
     }
-    navigating = id
-    let response = await fetch({ method, url, body })
-    if (cache && method === 'GET') {
-      caches[url] = response
-      storage.setItem('cache', JSON.stringify(caches))
+    navigating = id;
+    let response = await fetch({ method, url, body });
+    if (cache && method === "GET") {
+      caches[url] = response;
+      storage.setItem("cache", JSON.stringify(caches));
     }
     if (navigating !== id) {
-      return
+      return;
     }
     if (response.location) {
       navigate(
         {
-          method: 'GET',
-          url: new URL(response.location, url)
+          method: "GET",
+          url: new URL(response.location, url),
         },
         replace,
         restored,
-        method === 'GET' ? [...previous, url] : previous
-      )
-      return
+        method === "GET" ? [...previous, url] : previous
+      );
+      return;
     }
-    container.innerHTML = response
+    container.innerHTML = response;
     if (previous.length) {
       if (!replace) {
-        history.pushState(null, '', previous[0])
-        replace = true
+        history.pushState(null, "", previous[0]);
+        replace = true;
       }
       for (let url of previous.slice(1)) {
-        history.replaceState(null, '', url)
+        history.replaceState(null, "", url);
       }
     }
     if (replace) {
-      history.replaceState(response, '', url)
+      history.replaceState(response, "", url);
     } else {
-      history.pushState(response, '', url)
+      history.pushState(response, "", url);
     }
     if (!restored) {
-      scrollTo(0, 0)
+      scrollTo(0, 0);
     }
-    navigating = null
-    container.classList.remove('loading')
-    after()
-  }
+    navigating = null;
+    container.classList.remove("loading");
+    after();
+  };
 
   let add = (type, listener) => {
-    addEventListener(type, listener)
-    listeners.push([type, listener])
-  }
+    addEventListener(type, listener);
+    listeners.push([type, listener]);
+  };
 
   let initialize = () => {
-    container = document.querySelector(root)
+    container = document.querySelector(root);
     if (history.state) {
-      container.innerHTML = history.state
+      container.innerHTML = history.state;
     }
     navigate(
       {
-        method: 'GET',
-        url: new URL(location.href)
+        method: "GET",
+        url: new URL(location.href),
       },
       true,
       !!history.state
-    )
-  }
+    );
+  };
 
-  if (document.readyState === 'loading') {
-    add('DOMContentLoaded', initialize)
+  if (document.readyState === "loading") {
+    add("DOMContentLoaded", initialize);
   } else {
-    initialize()
+    initialize();
   }
 
-  add('popstate', event => {
+  add("popstate", (event) => {
     if (!event.state) {
-      return
+      return;
     }
-    container.innerHTML = event.state
+    container.innerHTML = event.state;
     if (refresh) {
       navigate(
         {
-          method: 'GET',
-          url: new URL(location.href)
+          method: "GET",
+          url: new URL(location.href),
         },
         true,
         true
-      )
-      return
+      );
+      return;
     }
     if (!navigating) {
-      return
+      return;
     }
-    navigating = null
-    container.classList.remove('loading')
-    after()
-  })
+    navigating = null;
+    container.classList.remove("loading");
+    after();
+  });
 
-  add('click', event => {
-    if (event.target.nodeName !== 'A') {
-      return
+  add("click", (event) => {
+    if (
+      event.target.nodeName !== "A" ||
+      !event.target.hasAttribute("href") ||
+      (event.target.target !== "" && event.target.target !== "_self") ||
+      new URL(event.target.href).hostname !== location.hostname
+    ) {
+      return;
     }
-    if (!event.target.hasAttribute('href')) {
-      return
-    }
-    if (event.target.target !== '' && event.target.target !== '_self') {
-      return
-    }
-    if (new URL(event.target.href).hostname !== location.hostname) {
-      return
-    }
-    event.preventDefault()
+    event.preventDefault();
     navigate(
       {
-        method: 'GET',
-        url: new URL(event.target.href)
+        method: "GET",
+        url: new URL(event.target.href),
       },
-      event.target.hasAttribute('replace')
-    )
-  })
+      event.target.hasAttribute("replace")
+    );
+  });
 
-  add('submit', event => {
-    if (event.target.method !== 'get' && event.target.method !== 'post') {
-      return
+  add("submit", (event) => {
+    if (
+      (event.target.method !== "get" && event.target.method !== "post") ||
+      (event.target.target !== "" && event.target.target !== "_self") ||
+      new URL(event.target.action).hostname !== location.hostname
+    ) {
+      return;
     }
-    if (event.target.target !== '' && event.target.target !== '_self') {
-      return
-    }
-    if (new URL(event.target.action).hostname !== location.hostname) {
-      return
-    }
-    event.preventDefault()
-    if (event.target.method === 'post') {
+    event.preventDefault();
+    if (event.target.method === "post") {
       navigate(
         {
-          method: 'POST',
+          method: "POST",
           url: new URL(event.target.action),
-          body: new FormData(event.target, event.submitter)
+          body: new FormData(event.target, event.submitter),
         },
-        event.target.hasAttribute('replace')
-      )
-      return
+        event.target.hasAttribute("replace")
+      );
+      return;
     }
     navigate(
       {
-        method: 'GET',
+        method: "GET",
         url: [...new FormData(event.target, event.submitter)].reduce(
           (url, [key, value]) => {
-            url.searchParams.set(key, value)
-            return url
+            url.searchParams.set(key, value);
+            return url;
           },
           new URL(event.target.action)
-        )
+        ),
       },
-      event.target.hasAttribute('replace')
-    )
-  })
+      event.target.hasAttribute("replace")
+    );
+  });
 
   return {
-    stop () {
+    stop() {
       for (let [type, listener] of listeners) {
-        removeEventListener(type, listener)
+        removeEventListener(type, listener);
       }
     },
-    push (url) {
+    push(url) {
       navigate({
-        method: 'GET',
-        url: new URL(url, location.href)
-      })
+        method: "GET",
+        url: new URL(url, location.href),
+      });
     },
-    replace (url) {
+    replace(url) {
       navigate(
         {
-          method: 'GET',
-          url: new URL(url, location.href)
+          method: "GET",
+          url: new URL(url, location.href),
         },
         true
-      )
+      );
     },
-    reload () {
+    reload() {
       navigate(
         {
-          method: 'GET',
-          url: new URL(location.href)
+          method: "GET",
+          url: new URL(location.href),
         },
         true
-      )
+      );
     },
-    async fetch (url, { method = 'GET', body } = {}) {
-      let next = new URL(url, location.href)
+    async fetch(url, { method = "GET", body } = {}) {
+      let next = new URL(url, location.href);
       while (true) {
         let response = await fetch({
           method,
           url: next,
-          body
-        })
+          body,
+        });
         if (response.location) {
-          next = new URL(response.location, next)
-          continue
+          next = new URL(response.location, next);
+          continue;
         }
-        return response
+        return response;
       }
-    }
-  }
-}
+    },
+  };
+};
