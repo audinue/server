@@ -21,12 +21,12 @@ export type ServeOption = {
   refresh?: boolean;
   cache?: boolean;
   storage?: Storage;
-  before?(): void;
-  after?(): void;
+  navigating?(): void;
+  navigated?(): void;
 };
 
 export type Server = {
-  stop(): void;
+  dispose(): void;
   push(url: string): void;
   replace(url: string): void;
   reload(): void;

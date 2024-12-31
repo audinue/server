@@ -4,11 +4,11 @@ export let serve = ({
   refresh = false,
   cache = false,
   storage = sessionStorage,
-  before = () => {},
-  after = () => {},
+  navigating = () => {},
+  navigated = () => {},
 }) => {
   let container;
-  let navigating;
+  let latest;
   let caches = cache && JSON.parse(storage.getItem("cache") ?? "{}");
   let listeners = [];
 
@@ -19,9 +19,11 @@ export let serve = ({
     previous = []
   ) => {
     let id = method + " " + url;
-    if (navigating === id) {
+    // block duplicate requests
+    if (latest === id) {
       return;
     }
+    // respond from cache if any
     if (cache && method === "GET" && !restored) {
       let key = url;
       while (key in caches) {
@@ -29,35 +31,47 @@ export let serve = ({
         if (!response) {
           break;
         }
+        // handle cached redirects:
+        //   assume that cached responses are already visited
+        //   there is no need to mark previous urls as visited
         if (response.location) {
           key = new URL(response.location, key);
           continue;
         }
+        // render the response
         container.innerHTML = response;
+        // modify the history
         if (replace) {
           history.replaceState(response, "", key);
         } else {
           history.pushState(response, "", key);
         }
+        // this is a new page so scroll to top
         scrollTo(0, 0);
+        // mark as restored from cache and should replace the state
+        // restored navigation shouldn't scroll to top
         replace = true;
         restored = true;
         break;
       }
     }
-    if (!navigating) {
-      container.classList.add("loading");
-      before();
+    if (!latest) {
+      container.classList.add("navigating");
+      navigating();
     }
-    navigating = id;
+    latest = id;
+    // fetch the response
     let response = await fetch({ method, url, body });
+    // store the response to cache
     if (cache && method === "GET") {
       caches[url] = response;
       storage.setItem("cache", JSON.stringify(caches));
     }
-    if (navigating !== id) {
+    // abort the process if this request is not the latest request
+    if (latest !== id) {
       return;
     }
+    // handle redirection properly
     if (response.location) {
       navigate(
         {
@@ -66,31 +80,36 @@ export let serve = ({
         },
         replace,
         restored,
+        // store previous urls so that we can mark them as visited later
         method === "GET" ? [...previous, url] : previous
       );
       return;
     }
+    // render the response
     container.innerHTML = response;
+    // mark previous urls as visited if any
     if (previous.length) {
       if (!replace) {
-        history.pushState(null, "", previous[0]);
+        history.pushState(null, "", previous.splice(1)[0]);
         replace = true;
       }
-      for (let url of previous.slice(1)) {
+      for (let url of previous) {
         history.replaceState(null, "", url);
       }
     }
+    // modify the history
     if (replace) {
       history.replaceState(response, "", url);
     } else {
       history.pushState(response, "", url);
     }
+    // scroll to top if not restored from cache or history.state
     if (!restored) {
       scrollTo(0, 0);
     }
-    navigating = null;
-    container.classList.remove("loading");
-    after();
+    latest = null;
+    container.classList.remove("navigating");
+    navigated();
   };
 
   let add = (type, listener) => {
@@ -135,12 +154,12 @@ export let serve = ({
       );
       return;
     }
-    if (!navigating) {
+    if (!latest) {
       return;
     }
-    navigating = null;
+    latest = null;
     container.classList.remove("loading");
-    after();
+    navigated();
   });
 
   add("click", (event) => {
@@ -198,7 +217,7 @@ export let serve = ({
   });
 
   return {
-    stop() {
+    dispose() {
       for (let [type, listener] of listeners) {
         removeEventListener(type, listener);
       }
