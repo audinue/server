@@ -26,11 +26,9 @@ export let serve = ({
     previous = []
   ) => {
     let id = method + " " + url;
-    // block duplicate requests
     if (latest === id) {
       return;
     }
-    // respond from cache if any
     if (cache.enabled && method === "GET" && !restored) {
       let key = url;
       while (key in caches) {
@@ -38,25 +36,17 @@ export let serve = ({
         if (!response) {
           break;
         }
-        // handle cached redirects:
-        //   assume that cached responses are already visited
-        //   there is no need to mark previous urls as visited
         if (response.location) {
           key = new URL(response.location, key);
           continue;
         }
-        // render the response
         container.innerHTML = response;
-        // modify the history
         if (replace) {
           history.replaceState(response, "", key);
         } else {
           history.pushState(response, "", key);
         }
-        // this is a new page so scroll to top
         scrollTo(0, 0);
-        // mark as restored from cache and should replace the state
-        // restored navigation shouldn't scroll to top
         replace = true;
         restored = true;
         break;
@@ -67,18 +57,14 @@ export let serve = ({
       navigating();
     }
     latest = id;
-    // fetch the response
     let response = await fetch({ method, url, body });
-    // store the response to cache
     if (cache.enabled && method === "GET") {
       caches[url] = response;
       cache.storage.setItem(cache.key, JSON.stringify(caches));
     }
-    // abort the process if this request is not the latest request
     if (latest !== id) {
       return;
     }
-    // handle redirection properly
     if (response.location) {
       navigate(
         {
@@ -87,14 +73,11 @@ export let serve = ({
         },
         replace,
         restored,
-        // store previous urls so that we can mark them as visited later
         method === "GET" ? [...previous, url] : previous
       );
       return;
     }
-    // render the response
     container.innerHTML = response;
-    // mark previous urls as visited if any
     if (previous.length) {
       if (!replace) {
         history.pushState(null, "", previous.splice(1)[0]);
@@ -104,13 +87,11 @@ export let serve = ({
         history.replaceState(null, "", url);
       }
     }
-    // modify the history
     if (replace) {
       history.replaceState(response, "", url);
     } else {
       history.pushState(response, "", url);
     }
-    // scroll to top if not restored from cache or history.state
     if (!restored) {
       scrollTo(0, 0);
     }
@@ -270,3 +251,5 @@ export let serve = ({
     },
   };
 };
+
+export const redirect = (location) => ({ location });

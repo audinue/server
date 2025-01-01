@@ -36,3 +36,5 @@ export type Server = {
 export type Serve = (config: ServeConfig) => Server;
 
 export const serve: Serve;
+
+export const redirect: (location: string) => Redirect;
